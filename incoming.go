@@ -9,6 +9,12 @@ import (
 	messages "github.com/foxelbox/foxbukkitslacklink/messages"
 )
 
+func (s *SlackLink) handleChatLinkMessage(msg *ChatMessageOut) {
+	if msg.Type == messages.MessageType_TEXT && msg.Target == nil {
+		log.Printf("Got chatMessage: %+v", msg)
+	}
+}
+
 func (s *SlackLink) receiveChatLinkMessages() {
 	defer s.wg.Done()
 
@@ -28,7 +34,7 @@ func (s *SlackLink) receiveChatLinkMessages() {
 		panic(err)
 	}
 
-	log.Printf("Waiting for messages from ChatLink...")
+	log.Printf("Ready to read messages from ChatLink.")
 	for {
 		topic, err := chatLinkMessages.Recv(0)
 		if err != nil {
@@ -53,6 +59,6 @@ func (s *SlackLink) receiveChatLinkMessages() {
 
 		readyMessage := ProtoCMOToCMO(chatMessage)
 
-		s.chatLinkMessages <- readyMessage
+		s.handleChatLinkMessage(readyMessage)
 	}
 }

@@ -9,8 +9,6 @@ type SlackLink struct {
 	Config *Config
 
 	wg *sync.WaitGroup
-
-	chatLinkMessages chan *ChatMessageOut
 }
 
 func (s *SlackLink) Initialize() {
@@ -22,8 +20,6 @@ func (s *SlackLink) Initialize() {
 	}
 
 	s.wg = new(sync.WaitGroup)
-
-	s.chatLinkMessages = make(chan *ChatMessageOut, 8)
 }
 
 func (s *SlackLink) Run() {
