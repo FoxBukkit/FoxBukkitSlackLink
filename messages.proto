@@ -1,0 +1,53 @@
+package com.foxelbox.foxbukkit.chatlink;
+
+enum MessageType {
+    TEXT = 0;
+    BLANK = 1;
+    KICK = 2;
+    PLAYERSTATE = 3;
+    INJECT = 4;
+}
+
+enum TargetType {
+    ALL = 0;
+    PLAYER = 1;
+    PERMISSION = 2;
+    SLACKUSER = 3;
+    SERVER = 4;
+}
+
+message UUID {
+    required sint64 msb = 1;
+    required sint64 lsb = 2;
+}
+
+message UserInfo {
+    required UUID uuid = 1;
+    required string name = 2;
+}
+
+message MessageTarget {
+    required TargetType type = 1 [default = ALL];
+    repeated string filter = 2;
+}
+
+message ChatMessageOut {
+    required int64 id = 1;
+    optional string server = 2;
+    optional UserInfo from = 3;
+    required int64 timestamp = 4;
+    required UUID context = 5;
+    optional bool finalizeContext = 6 [default = true];
+    optional string contents = 7;
+    optional MessageType type = 8 [default = TEXT];
+    optional MessageTarget to = 9;
+}
+
+message ChatMessageIn {
+    required string server = 1;
+    optional UserInfo from = 2;
+    required int64 timestamp = 3;
+    required UUID context = 4;
+    optional string contents = 5;
+    optional MessageType type = 6 [default = TEXT];
+}
