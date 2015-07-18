@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"sync"
 
 	"github.com/golang/protobuf/proto"
 	zmq "github.com/pebbe/zmq4"
@@ -10,28 +9,28 @@ import (
 	messages "github.com/foxelbox/foxbukkitslacklink/messages"
 )
 
-func receiveMessages(wg *sync.WaitGroup) {
-	defer wg.Done()
+func (s *SlackLink) receiveChatLinkMessages() {
+	defer s.wg.Done()
 
-	incomingMessages, err := zmq.NewSocket(zmq.SUB)
+	chatLinkMessages, err := zmq.NewSocket(zmq.SUB)
 	if err != nil {
 		panic(err)
 	}
-	defer incomingMessages.Close()
+	defer chatLinkMessages.Close()
 
-	err = incomingMessages.SetSubscribe("CMO")
-	if err != nil {
-		panic(err)
-	}
-
-	err = incomingMessages.Connect("tcp://127.0.0.1:5558")
+	err = chatLinkMessages.SetSubscribe("CMO")
 	if err != nil {
 		panic(err)
 	}
 
-	log.Printf("Waiting for incoming messages...")
+	err = ApplyZeroMQConfigs(chatLinkMessages, s.Config.ZeroMQ.BrokerToServer)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Printf("Waiting for messages from ChatLink...")
 	for {
-		topic, err := incomingMessages.Recv(0)
+		topic, err := chatLinkMessages.Recv(0)
 		if err != nil {
 			panic(err)
 		}
@@ -40,7 +39,7 @@ func receiveMessages(wg *sync.WaitGroup) {
 			continue
 		}
 
-		chatMessageData, err := incomingMessages.RecvBytes(0)
+		chatMessageData, err := chatLinkMessages.RecvBytes(0)
 		if err != nil {
 			panic(err)
 		}
@@ -52,6 +51,8 @@ func receiveMessages(wg *sync.WaitGroup) {
 			panic(err)
 		}
 
-		log.Printf("Got chatMessage: %#v", chatMessage)
+		readyMessage := ProtoCMOToCMO(chatMessage)
+
+		s.chatLinkMessages <- readyMessage
 	}
 }

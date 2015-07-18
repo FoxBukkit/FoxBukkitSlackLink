@@ -14,8 +14,8 @@ import (
 func protoUUIDToUUID(u *messages.UUID) uuid.UUID {
 	out := make(uuid.UUID, 16)
 
-	binary.BigEndian.PutUint64(out, uint64(*u.Msb))
-	binary.BigEndian.PutUint64(out[8:], uint64(*u.Lsb))
+	binary.BigEndian.PutUint64(out, uint64(u.GetMsb()))
+	binary.BigEndian.PutUint64(out[8:], uint64(u.GetLsb()))
 
 	return out
 }

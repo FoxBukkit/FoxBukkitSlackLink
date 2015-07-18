@@ -1,9 +1,16 @@
 package main
 
-import "log"
+import (
+	"log"
+	"sync"
+)
 
 type SlackLink struct {
 	Config *Config
+
+	wg *sync.WaitGroup
+
+	chatLinkMessages chan *ChatMessageOut
 }
 
 func (s *SlackLink) Initialize() {
@@ -13,8 +20,15 @@ func (s *SlackLink) Initialize() {
 	if err != nil {
 		log.Fatalf("Failed to parse config: %v", err)
 	}
+
+	s.wg = new(sync.WaitGroup)
+
+	s.chatLinkMessages = make(chan *ChatMessageOut, 8)
 }
 
 func (s *SlackLink) Run() {
+	s.wg.Add(1)
+	go s.receiveChatLinkMessages()
 
+	s.wg.Wait()
 }
