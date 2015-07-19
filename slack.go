@@ -28,6 +28,12 @@ func (s *SlackLink) handleSlackMessage(msg *slack.MessageEvent) {
 	}
 
 	channel := info.GetChannelById(msg.ChannelId)
+
+	if channel == nil {
+		// We don't know about this channel.
+		return
+	}
+
 	switch channel.Name {
 	case "minecraft":
 	case "minecraft-ops":
