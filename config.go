@@ -57,6 +57,12 @@ type Config struct {
 		BrokerToServer []*ZeroMQConfig `json:"brokerToServer"`
 	} `json:"zeromq"`
 
+	Redis struct {
+		Address  string `json:"address"`
+		Password string `json:"password"`
+		DB       int64  `json:"db"`
+	} `json:"redis"`
+
 	Slack struct {
 		Token string `json:"token"`
 	} `json:"slack"`
