@@ -114,8 +114,6 @@ func (s *SlackLink) receiveChatLinkMessages() {
 		}
 
 		readyMessage := ProtoCMOToCMO(chatMessage)
-		log.Printf("Got message on ChatLink: %+v", readyMessage)
-
 		s.handleChatLinkMessage(readyMessage)
 	}
 }
