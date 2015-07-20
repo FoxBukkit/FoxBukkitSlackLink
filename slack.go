@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -16,8 +17,8 @@ import (
 
 func (s *SlackLink) handleSlackMessage(msg *slack.MessageEvent) {
 	info := s.slack.GetInfo()
-	if msg.UserId == info.User.Id {
-		log.Printf("Ignoring message from myself.")
+
+	if msg.UserId == "" || msg.UserId == info.User.Id {
 		return
 	}
 
