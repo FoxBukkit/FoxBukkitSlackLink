@@ -103,7 +103,7 @@ func (s *SlackLink) handleSlackMessages() {
 		case *slack.SlackWSError:
 			panic(data)
 		default:
-			log.Printf("Unhandled message: %T", data)
+			//log.Printf("Unhandled message: %T", data)
 		}
 	}
 }
