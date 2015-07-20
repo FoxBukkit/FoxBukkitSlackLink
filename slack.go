@@ -144,7 +144,11 @@ func (s *SlackLink) receiveSlackMessages() {
 
 	rtm.SetUserAsActive()
 
+	go rtm.Keepalive(5 * time.Second)
 	rtm.HandleIncomingEvents(s.slackMessages)
+
+	log.Printf("WARNING: Slack WebSocket died.")
+	os.Exit(2)
 }
 
 func (s *SlackLink) sendSlackMessages() {
