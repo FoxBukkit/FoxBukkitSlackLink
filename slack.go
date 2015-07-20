@@ -40,7 +40,6 @@ func (s *SlackLink) handleSlackMessage(msg *slack.MessageEvent) {
 	case "minecraft-ops":
 		msg.Text = "#" + msg.Text
 	default:
-		log.Printf("Ignored message from %s", channel.Name)
 		return
 	}
 
@@ -72,7 +71,6 @@ func (s *SlackLink) forwardSlackMessageToChatLink(msg *slack.MessageEvent) {
 
 	s.addContextAssociation(cmi.Context, msg.ChannelId)
 
-	log.Printf("Outgoing message: %#v", cmi)
 	s.chatLinkOut <- CMIToProtoCMI(cmi)
 }
 
