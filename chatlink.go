@@ -30,7 +30,7 @@ func (s *SlackLink) handleChatLinkMessage(msg *ChatMessageOut) {
 
 			ref, mustContain, exists := s.getSpecialAcknowledgement(msg.Context)
 			if exists && strings.HasSuffix(messageContents, mustContain) {
-				s.slack.AddReaction("heavy_check_mark", *ref)
+				s.slack.AddReaction("incoming_envelope", *ref)
 				return
 			}
 
