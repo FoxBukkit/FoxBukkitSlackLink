@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"html"
 
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/nlopes/slack"
@@ -21,6 +22,8 @@ func (s *SlackLink) handleSlackMessage(msg *slack.MessageEvent) {
 	if msg.UserId == "" || msg.UserId == info.User.Id {
 		return
 	}
+
+	msg.Text = html.UnescapeString(msg.Text)
 
 	if strings.HasPrefix(msg.Text, ".") {
 		// Always handle commands, regardless of channel
