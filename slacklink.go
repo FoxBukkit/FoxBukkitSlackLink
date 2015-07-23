@@ -31,6 +31,12 @@ type SlackLink struct {
 
 	contextBuffers     map[string]*bytes.Buffer
 	contextBuffersLock sync.Mutex
+
+	specialAcknowledgementContexts map[string]struct {
+		MustContain string
+		Ref         *slack.ItemRef
+	}
+	specialAcknowledgementContextsLock sync.Mutex
 }
 
 func (s *SlackLink) Initialize() {
@@ -40,6 +46,10 @@ func (s *SlackLink) Initialize() {
 
 	s.contextChannels = make(map[string]string)
 	s.contextBuffers = make(map[string]*bytes.Buffer)
+	s.specialAcknowledgementContexts = make(map[string]struct {
+		MustContain string
+		Ref         *slack.ItemRef
+	})
 
 	var err error
 
@@ -96,7 +106,7 @@ func (s *SlackLink) addContextAssociation(context uuid.UUID, channelID string) {
 	s.contextChannels[context.String()] = channelID
 	s.contextChannelsLock.Unlock()
 	s.contextBuffersLock.Lock()
-	s.contextBuffers[context.String()] = new(bytes.Buffer)
+	s.contextBuffers[context.String()] = bytes.NewBuffer(nil)
 	s.contextBuffersLock.Unlock()
 }
 
@@ -107,6 +117,36 @@ func (s *SlackLink) removeContextAssociation(context uuid.UUID) {
 	s.contextBuffersLock.Lock()
 	delete(s.contextBuffers, context.String())
 	s.contextBuffersLock.Unlock()
+	s.removeSpecialAcknowledgementContext(context)
+}
+
+func (s *SlackLink) addSpecialAcknowledgementContext(context uuid.UUID, ref *slack.ItemRef, mustContain string) {
+	s.specialAcknowledgementContextsLock.Lock()
+	defer s.specialAcknowledgementContextsLock.Unlock()
+	s.specialAcknowledgementContexts[context.String()] = struct {
+		MustContain string
+		Ref         *slack.ItemRef
+	}{
+		MustContain: mustContain,
+		Ref:         ref,
+	}
+}
+
+func (s *SlackLink) getSpecialAcknowledgement(context uuid.UUID) (*slack.ItemRef, string, bool) {
+	s.specialAcknowledgementContextsLock.Lock()
+	defer s.specialAcknowledgementContextsLock.Unlock()
+	entry, ok := s.specialAcknowledgementContexts[context.String()]
+	if !ok {
+		return nil, "", false
+	}
+
+	return entry.Ref, entry.MustContain, true
+}
+
+func (s *SlackLink) removeSpecialAcknowledgementContext(context uuid.UUID) {
+	s.specialAcknowledgementContextsLock.Lock()
+	defer s.specialAcknowledgementContextsLock.Unlock()
+	delete(s.specialAcknowledgementContexts, context.String())
 }
 
 func (s *SlackLink) getContextBuffer(context uuid.UUID) *bytes.Buffer {

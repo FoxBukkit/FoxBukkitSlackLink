@@ -1,13 +1,13 @@
 package main
 
 import (
+	"html"
 	"log"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-	"html"
 
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/nlopes/slack"
@@ -27,7 +27,7 @@ func (s *SlackLink) handleSlackMessage(msg *slack.MessageEvent) {
 
 	if strings.HasPrefix(msg.Text, ".") {
 		// Always handle commands, regardless of channel
-		s.forwardSlackMessageToChatLink(msg)
+		s.forwardSlackMessageToChatLink(msg, false)
 		return
 	}
 
@@ -46,10 +46,10 @@ func (s *SlackLink) handleSlackMessage(msg *slack.MessageEvent) {
 		return
 	}
 
-	s.forwardSlackMessageToChatLink(msg)
+	s.forwardSlackMessageToChatLink(msg, true)
 }
 
-func (s *SlackLink) forwardSlackMessageToChatLink(msg *slack.MessageEvent) {
+func (s *SlackLink) forwardSlackMessageToChatLink(msg *slack.MessageEvent, specialAcknowledgement bool) {
 	if strings.HasPrefix(msg.Text, ".") {
 		msg.Text = "/" + msg.Text[1:]
 	}
@@ -73,6 +73,15 @@ func (s *SlackLink) forwardSlackMessageToChatLink(msg *slack.MessageEvent) {
 	}
 
 	s.addContextAssociation(cmi.Context, msg.ChannelId)
+	if specialAcknowledgement {
+		cleanedMessage := cmi.Contents
+		if strings.HasPrefix(cleanedMessage, "#") {
+			cleanedMessage = cleanedMessage[1:]
+		}
+
+		ref := slack.NewRefToMessage(msg.ChannelId, msg.Timestamp)
+		s.addSpecialAcknowledgementContext(cmi.Context, &ref, cleanedMessage)
+	}
 
 	s.chatLinkOut <- CMIToProtoCMI(cmi)
 }

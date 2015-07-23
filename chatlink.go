@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 	zmq "github.com/pebbe/zmq4"
@@ -20,13 +21,21 @@ func (s *SlackLink) handleChatLinkMessage(msg *ChatMessageOut) {
 	}
 
 	if msg.FinalizeContext {
-		toChannels := s.getDestinationsForMessage(msg)
+		defer s.removeContextAssociation(msg.Context)
 
-		if toChannels != nil {
-			buf := s.getContextBuffer(msg.Context)
+		buf := s.getContextBuffer(msg.Context)
 
-			if buf != nil {
-				messageContents := buf.String()
+		if buf != nil {
+			messageContents := buf.String()
+
+			ref, mustContain, exists := s.getSpecialAcknowledgement(msg.Context)
+			if exists && strings.HasSuffix(messageContents, mustContain) {
+				s.slack.AddReaction("heavy_check_mark", *ref)
+				return
+			}
+
+			toChannels := s.getDestinationsForMessage(msg)
+			if toChannels != nil {
 
 				for _, channel := range toChannels {
 					s.slackOut <- &SlackMessage{
@@ -40,7 +49,6 @@ func (s *SlackLink) handleChatLinkMessage(msg *ChatMessageOut) {
 			}
 		}
 
-		s.removeContextAssociation(msg.Context)
 	}
 }
 
