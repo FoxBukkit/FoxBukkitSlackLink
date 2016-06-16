@@ -149,7 +149,6 @@ func (s *SlackLink) refreshPresenceInfo() {
 func (s *SlackLink) receiveSlackMessages() {
 	defer s.wg.Done()
 
-	s.slack = s.slackClient.NewRTM()
 	_, _, err := s.slack.StartRTM()
 	if err != nil {
 		panic(err)

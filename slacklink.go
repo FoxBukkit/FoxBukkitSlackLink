@@ -82,6 +82,9 @@ func (s *SlackLink) Initialize() {
 
 func (s *SlackLink) Run() {
 	s.wg.Add(5)
+
+	s.slack = s.slackClient.NewRTM()
+
 	go s.receiveChatLinkMessages()
 	go s.sendChatLinkMessages()
 	go s.receiveSlackMessages()
