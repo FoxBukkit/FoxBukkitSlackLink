@@ -6,7 +6,7 @@ import (
 	"encoding/binary"
 	"time"
 
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/google/uuid"
 	"github.com/golang/protobuf/proto"
 
 	messages "github.com/foxelbox/foxbukkitslacklink/messages"
@@ -105,9 +105,9 @@ type ChatMessageIn struct {
 }
 
 func protoUUIDToUUID(u *messages.UUID) uuid.UUID {
-	out := make(uuid.UUID, 16)
+	var out uuid.UUID
 
-	binary.BigEndian.PutUint64(out, uint64(u.GetMsb()))
+	binary.BigEndian.PutUint64(out[:], uint64(u.GetMsb()))
 	binary.BigEndian.PutUint64(out[8:], uint64(u.GetLsb()))
 
 	return out

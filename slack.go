@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/google/uuid"
 	"github.com/nlopes/slack"
 	"gopkg.in/redis.v3"
 
@@ -19,7 +19,7 @@ import (
 func (s *SlackLink) handleSlackMessage(msg *slack.MessageEvent) {
 	info := s.slack.GetInfo()
 
-	if msg.UserId == "" || msg.UserId == info.User.Id {
+	if msg.User == "" || msg.User == info.User.ID {
 		return
 	}
 
@@ -31,7 +31,7 @@ func (s *SlackLink) handleSlackMessage(msg *slack.MessageEvent) {
 		return
 	}
 
-	channel := info.GetChannelById(msg.ChannelId)
+	channel := info.GetChannelByID(msg.Channel)
 
 	if channel == nil {
 		// We don't know about this channel.
@@ -54,15 +54,17 @@ func (s *SlackLink) forwardSlackMessageToChatLink(msg *slack.MessageEvent, speci
 		msg.Text = "/" + msg.Text[1:]
 	}
 
-	minecraftAccount := s.getMinecraftFromSlack(msg.UserId)
+	minecraftAccount := s.getMinecraftFromSlack(msg.User)
 	if minecraftAccount == nil {
 		// They aren't associated with an account. Ignore.
 		return
 	}
 
+	muuid, _ := uuid.NewRandom()
+
 	cmi := &ChatMessageIn{
 		Server:  "Slack",
-		Context: uuid.NewRandom(),
+		Context: muuid,
 		Type:    messages.MessageType_TEXT,
 
 		From: minecraftAccount,
@@ -72,14 +74,14 @@ func (s *SlackLink) forwardSlackMessageToChatLink(msg *slack.MessageEvent, speci
 		Contents: msg.Text,
 	}
 
-	s.addContextAssociation(cmi.Context, msg.ChannelId)
+	s.addContextAssociation(cmi.Context, msg.Channel)
 	if specialAcknowledgement {
 		cleanedMessage := cmi.Contents
 		if strings.HasPrefix(cleanedMessage, "#") {
 			cleanedMessage = cleanedMessage[1:]
 		}
 
-		ref := slack.NewRefToMessage(msg.ChannelId, msg.Timestamp)
+		ref := slack.NewRefToMessage(msg.Channel, msg.Timestamp)
 		s.addSpecialAcknowledgementContext(cmi.Context, &ref, cleanedMessage)
 	}
 
@@ -87,7 +89,7 @@ func (s *SlackLink) forwardSlackMessageToChatLink(msg *slack.MessageEvent, speci
 }
 
 func (s *SlackLink) handlePresenceChange(ev *slack.PresenceChangeEvent) {
-	mcID, err := s.redis.HGet("slacklinks:slack-to-mc", ev.UserId).Result()
+	mcID, err := s.redis.HGet("slacklinks:slack-to-mc", ev.User).Result()
 	if err == redis.Nil {
 		return
 	} else if err != nil {
@@ -104,7 +106,7 @@ func (s *SlackLink) handlePresenceChange(ev *slack.PresenceChangeEvent) {
 func (s *SlackLink) handleSlackMessages() {
 	defer s.wg.Done()
 
-	for msg := range s.slackMessages {
+	for msg := range s.slack.IncomingEvents {
 		switch data := msg.Data.(type) {
 		case *slack.MessageEvent:
 			s.handleSlackMessage(data)
@@ -112,8 +114,6 @@ func (s *SlackLink) handleSlackMessages() {
 			s.handlePresenceChange(data)
 		case slack.HelloEvent:
 			s.refreshPresenceInfo()
-		case *slack.SlackWSError:
-			panic(data)
 		default:
 			//log.Printf("Unhandled message: %T", data)
 		}
@@ -130,7 +130,7 @@ func (s *SlackLink) refreshPresenceInfo() {
 
 	mcIDs := make([]string, 0, len(slackToMC))
 	for _, user := range users {
-		mcID, ok := slackToMC[user.Id]
+		mcID, ok := slackToMC[user.ID]
 		if !ok {
 			continue
 		}
@@ -149,15 +149,15 @@ func (s *SlackLink) refreshPresenceInfo() {
 func (s *SlackLink) receiveSlackMessages() {
 	defer s.wg.Done()
 
-	rtm, err := s.slack.StartRTM("", "https://slack.com")
+	s.slack = s.slackClient.NewRTM()
+	_, _, err := s.slack.StartRTM()
 	if err != nil {
 		panic(err)
 	}
 
-	rtm.SetUserAsActive()
+	s.slackClient.SetUserAsActive()
 
-	go rtm.Keepalive(5 * time.Second)
-	rtm.HandleIncomingEvents(s.slackMessages)
+	s.slack.ManageConnection()
 
 	log.Printf("WARNING: Slack WebSocket died.")
 	os.Exit(2)

@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/google/uuid"
 	"gopkg.in/redis.v3"
 )
 
@@ -16,8 +16,8 @@ func (s *SlackLink) getMinecraftFromSlack(userID string) *MinecraftPlayer {
 		return nil
 	}
 
-	id := uuid.Parse(minecraftID)
-	if id == nil { // Invalid ID
+	id, err := uuid.Parse(minecraftID)
+	if err != nil { // Invalid ID
 		return nil
 	}
 

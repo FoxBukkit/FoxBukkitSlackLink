@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/google/uuid"
 
 	"github.com/nlopes/slack"
 	"gopkg.in/redis.v3"
@@ -18,8 +18,8 @@ type SlackLink struct {
 
 	wg *sync.WaitGroup
 
-	slack         *slack.Slack
-	slackMessages chan slack.SlackEvent
+	slack         *slack.RTM
+	slackClient   *slack.Client
 
 	redis *redis.Client
 
@@ -40,7 +40,6 @@ type SlackLink struct {
 }
 
 func (s *SlackLink) Initialize() {
-	s.slackMessages = make(chan slack.SlackEvent)
 	s.chatLinkOut = make(chan *messages.ChatMessageIn)
 	s.slackOut = make(chan *SlackMessage)
 
@@ -60,9 +59,9 @@ func (s *SlackLink) Initialize() {
 
 	s.wg = new(sync.WaitGroup)
 
-	s.slack = slack.New(s.Config.Slack.Token)
+	s.slackClient = slack.New(s.Config.Slack.Token)
 
-	authTest, err := s.slack.AuthTest()
+	authTest, err := s.slackClient.AuthTest()
 	if err != nil {
 		panic(err)
 	}
